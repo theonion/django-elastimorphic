@@ -1,0 +1,12 @@
+*.py[cod]
+.DS_Store
+share
+.Python
+*.db
+.coverage
+coverage.xml
+*~
+dist
+.vagrant*
+pep8.txt
+*.egg-info
