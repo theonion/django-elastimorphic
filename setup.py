@@ -77,7 +77,7 @@ setup(
     description=description,
     author=author,
     author_email=author_email,
-    packages=get_packages(package),
+    packages=["elastimorphic"],
     package_data=get_package_data(package),
     install_requires=requires,
     test_suite="setuptest.setuptest.SetupTestSuite",

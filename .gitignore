@@ -10,3 +10,4 @@ dist
 .vagrant*
 pep8.txt
 *.egg-info
+*.egg
