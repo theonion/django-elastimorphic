@@ -15,6 +15,6 @@ INSTALLED_APPS = (
     "elastimorphic.tests.testapp",
 )
 
-ES_URLS = ["http://192.168.33.101:9200"]
+ES_URLS = ["http://127.0.0.1:9200"]
 
 SECRET_KEY = "EVERYBODY_DANCE_NOW"
