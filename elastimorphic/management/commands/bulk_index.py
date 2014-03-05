@@ -4,12 +4,9 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand
 from django.db import models
-
 from elasticutils import get_es
 from pyelasticsearch.client import JsonEncoder
-from pyelasticsearch.exceptions import ElasticHttpNotFoundError
 
-from django.core.management import call_command
 from elastimorphic import PolymorphicIndexable
 from elastimorphic.conf import settings
 
@@ -68,7 +65,7 @@ class Command(BaseCommand):
         num_processed = 0
         payload = []
         for model in models_to_index:
-            for instance in model.objects.instance_of(model).order_by("id").iterator():    
+            for instance in model.objects.instance_of(model).order_by("id").iterator():
                 meta = {
                     "index": {
                         "_index": instance.get_index_name() + index_suffix,

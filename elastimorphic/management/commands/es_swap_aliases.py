@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand
 from elasticutils.contrib.django import get_es
-from pyelasticsearch.exceptions import IndexAlreadyExistsError, ElasticHttpError
 
 from elastimorphic.models import polymorphic_indexable_registry
 
