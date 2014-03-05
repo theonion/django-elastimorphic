@@ -1,6 +1,7 @@
 django-elastimorphic
 ====================
-A marriage of django-polymorphic and elasticutils.
+A marriage of django-polymorphic and elasticutils. This should be considered
+a work-in-progress and might change at any time. 
 
 Usage
 -----
