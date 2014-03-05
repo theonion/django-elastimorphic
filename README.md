@@ -4,6 +4,7 @@ A marriage of django-polymorphic and elasticutils. This should be considered
 a work-in-progress and might change at any time. 
 
 [![Build Status](https://travis-ci.org/theonion/django-elastimorphic.png?branch=master)](https://travis-ci.org/theonion/django-elastimorphic)
+[![Coverage Status](https://coveralls.io/repos/theonion/django-elastimorphic/badge.png)](https://coveralls.io/r/theonion/django-elastimorphic)
 
 Usage
 -----
