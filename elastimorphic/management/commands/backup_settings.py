@@ -26,8 +26,7 @@ class Command(BaseCommand):
 
         for name, model in polymorphic_indexable_registry.all_models.items():
             self.stdout.write("curl -XPUT http://$ES_HOST:9200/%s/%s/_mapping -d '%s'" % (
-                    model.get_index_name(),
-                    model.get_mapping_type_name(),
-                    json.dumps(model.get_mapping())
-                )
-            )
+                model.get_index_name(),
+                model.get_mapping_type_name(),
+                json.dumps(model.get_mapping())
+            ))

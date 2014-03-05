@@ -18,7 +18,6 @@ which installs elasticsearch in a VM so you don't have to.
 * Install Vagrant
 * Run `vagrant up` in the root directory of your django-elastimorphic checkout
 * Get a cup of coffee and wait for that to complete.
-* pip install -r requirements.txt
 * python setup.py test
 
 License

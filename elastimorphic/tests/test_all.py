@@ -4,94 +4,16 @@ import copy
 import datetime
 
 from django.core.management import call_command
-from django.db import models
 from django.test import TestCase
 
 from elasticutils import get_es
-from polymorphic import PolymorphicModel
 from pyelasticsearch.exceptions import ElasticHttpNotFoundError, ElasticHttpError
 
-from elastimorphic import PolymorphicIndexable, SearchManager
 from elastimorphic.conf import settings
 from elastimorphic.models import polymorphic_indexable_registry
 
-
-# Models ########
-
-
-class SeparateIndexable(PolymorphicIndexable, PolymorphicModel):
-    junk = models.CharField(max_length=255)
-
-    search_objects = SearchManager()
-
-    def extract_document(self):
-        doc = super(SeparateIndexable, self).extract_document()
-        doc["junk"] = self.junk
-        return doc
-
-    @classmethod
-    def get_mapping_properties(cls):
-        properties = super(SeparateIndexable, cls).get_mapping_properties()
-        properties.update({
-            "junk": {"type": "string"}
-        })
-        return properties
-
-
-class ParentIndexable(PolymorphicIndexable, PolymorphicModel):
-    foo = models.CharField(max_length=255)
-
-    search_objects = SearchManager()
-
-    def extract_document(self):
-        doc = super(ParentIndexable, self).extract_document()
-        doc['foo'] = self.foo
-        return doc
-
-    @classmethod
-    def get_mapping_properties(cls):
-        properties = super(ParentIndexable, cls).get_mapping_properties()
-        properties.update({
-            "foo": {"type": "string"}
-        })
-        return properties
-
-
-class ChildIndexable(ParentIndexable):
-    bar = models.IntegerField()
-
-    def extract_document(self):
-        doc = super(ChildIndexable, self).extract_document()
-        doc["bar"] = self.bar
-        return doc
-
-    @classmethod
-    def get_mapping_properties(cls):
-        properties = super(ChildIndexable, cls).get_mapping_properties()
-        properties.update({
-            "bar": {"type": "integer"}
-        })
-        return properties
-
-
-class GrandchildIndexable(ChildIndexable):
-    baz = models.DateField()
-
-    def extract_document(self):
-        doc = super(GrandchildIndexable, self).extract_document()
-        doc["baz"] = self.baz
-        return doc
-
-    @classmethod
-    def get_mapping_properties(cls):
-        properties = super(GrandchildIndexable, cls).get_mapping_properties()
-        properties.update({
-            "baz": {"type": "date"}
-        })
-        return properties
-
-
-# Test cases ##########
+from .testapp.models import (
+    ChildIndexable, GrandchildIndexable, ParentIndexable, SeparateIndexable)
 
 
 class BaseIndexableTestCase(TestCase):
@@ -128,10 +50,10 @@ class IndexableTestCase(BaseIndexableTestCase):
         SeparateIndexable.search_objects.refresh()
 
     def test_mapping_type_names(self):
-        self.assertEqual(ParentIndexable.get_mapping_type_name(), "elastimorphic_parentindexable")
-        self.assertEqual(ChildIndexable.get_mapping_type_name(), "elastimorphic_childindexable")
-        self.assertEqual(GrandchildIndexable.get_mapping_type_name(), "elastimorphic_grandchildindexable")
-        self.assertEqual(SeparateIndexable.get_mapping_type_name(), "elastimorphic_separateindexable")
+        self.assertEqual(ParentIndexable.get_mapping_type_name(), "testapp_parentindexable")
+        self.assertEqual(ChildIndexable.get_mapping_type_name(), "testapp_childindexable")
+        self.assertEqual(GrandchildIndexable.get_mapping_type_name(), "testapp_grandchildindexable")
+        self.assertEqual(SeparateIndexable.get_mapping_type_name(), "testapp_separateindexable")
         self.assertEqual(
             ParentIndexable.get_mapping_type_names(), [
                 ParentIndexable.get_mapping_type_name(),
@@ -168,9 +90,9 @@ class IndexableTestCase(BaseIndexableTestCase):
         self.assertEqual(ParentIndexable.search_objects.s().instance_of(ChildIndexable, exact=True).count(), 1)
         self.assertEqual(ParentIndexable.search_objects.s().instance_of(GrandchildIndexable, exact=True).count(), 1)
 
-        self.assertEqual(ParentIndexable.search_objects.s().doctypes("elastimorphic_parentindexable").count(), 1)
-        self.assertEqual(ParentIndexable.search_objects.s().doctypes("elastimorphic_childindexable").count(), 1)
-        self.assertEqual(ParentIndexable.search_objects.s().doctypes("elastimorphic_grandchildindexable").count(), 1)
+        self.assertEqual(ParentIndexable.search_objects.s().doctypes("testapp_parentindexable").count(), 1)
+        self.assertEqual(ParentIndexable.search_objects.s().doctypes("testapp_childindexable").count(), 1)
+        self.assertEqual(ParentIndexable.search_objects.s().doctypes("testapp_grandchildindexable").count(), 1)
 
         self.assertEqual(ParentIndexable.search_objects.s().instance_of(ParentIndexable).count(), 3)
         self.assertEqual(ParentIndexable.search_objects.s().instance_of(ChildIndexable).count(), 2)

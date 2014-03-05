@@ -68,7 +68,7 @@ class Command(BaseCommand):
         num_processed = 0
         payload = []
         for model in models_to_index:
-            for instance in model.objects.instance_of(model).order_by("id").iterator():     
+            for instance in model.objects.instance_of(model).order_by("id").iterator():    
                 meta = {
                     "index": {
                         "_index": instance.get_index_name() + index_suffix,

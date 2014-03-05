@@ -1,4 +1,3 @@
-from django.contrib.contenttypes.models import ContentType
 from django.db import models, DEFAULT_DB_ALIAS
 from django.template.defaultfilters import slugify
 

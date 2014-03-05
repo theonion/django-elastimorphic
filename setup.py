@@ -6,6 +6,7 @@ import re
 import sys
 
 from setuptools import setup
+from setuptools.command.test import test as TestCommand
 
 
 name = "django-elastimorphic"
@@ -69,6 +70,19 @@ if sys.argv[-1] == "publish":
     sys.exit()
 
 
+class PyTest(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        #import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.test_args)
+        sys.exit(errno)
+
+
 setup(
     name=name,
     version=get_version(package),
@@ -80,5 +94,6 @@ setup(
     packages=["elastimorphic"],
     package_data=get_package_data(package),
     install_requires=requires,
-    test_suite="setuptest.setuptest.SetupTestSuite",
+    tests_require=["pytest-django"],
+    cmdclass={"test": PyTest}
 )
