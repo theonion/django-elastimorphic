@@ -91,7 +91,7 @@ setup(
     description=description,
     author=author,
     author_email=author_email,
-    packages=["elastimorphic"],
+    packages=get_packages("elastimorphic"),
     package_data=get_package_data(package),
     install_requires=requires,
     tests_require=["pytest-django"],
