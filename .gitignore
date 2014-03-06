@@ -11,5 +11,5 @@ dist
 pep8.txt
 *.egg-info
 *.egg
-
+build/
 docs/_build/*
