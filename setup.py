@@ -19,7 +19,7 @@ license = "MIT"
 requires = [
     "Django",
     "django_polymorphic==0.5.3",
-    "elasticutils==dev",
+    "elasticutils==0.9.dev",
     "six==1.5.2",
     "wsgiref==0.1.2",
 ]

@@ -1,7 +1,7 @@
 from django.core.management import call_command
 from django.test import TestCase
 from elasticutils import get_es
-from pyelasticsearch.exceptions import ElasticHttpNotFoundError
+from elasticsearch.exceptions import NotFoundError
 
 from elastimorphic.conf import settings
 from elastimorphic.models import polymorphic_indexable_registry
@@ -22,5 +22,5 @@ class BaseIndexableTestCase(TestCase):
         for base_class in polymorphic_indexable_registry.families.keys():
             try:
                 self.es.delete_index(base_class.get_index_name() + "_" + suffix)
-            except ElasticHttpNotFoundError:
+            except NotFoundError:
                 pass

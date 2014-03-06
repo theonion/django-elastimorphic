@@ -2,7 +2,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand
 from elasticutils import get_es
-from pyelasticsearch.exceptions import IndexAlreadyExistsError, ElasticHttpError
+from elasticsearch.exceptions import ConflictError, TransportError
 
 from elastimorphic.conf import settings
 from elastimorphic.models import polymorphic_indexable_registry
@@ -58,18 +58,18 @@ class Command(BaseCommand):
             if options.get("drop_existing_indexes", False) and index_suffix:
                 try:
                     es.delete_index(index)
-                except ElasticHttpError:
+                except TransportError:
                     pass
 
             try:
                 es.create_index(index, settings={
                     "settings": settings.ES_SETTINGS
                 })
-            except IndexAlreadyExistsError:
+            except ConflictError:
                 try:
                     # TODO: Actually compare the settings.
                     es.update_settings(index, settings.ES_SETTINGS)
-                except ElasticHttpError as e:
+                except TransportError as e:
                     if e.status_code == 400:
                         if options.get("force", False):
                             es.close_index(index)
@@ -83,5 +83,5 @@ class Command(BaseCommand):
             for doctype, mapping in mappings.items():
                 try:
                     es.put_mapping(index, doctype, dict(doctype=mapping))
-                except ElasticHttpError as e:
+                except TransportError as e:
                     self.stderr.write("ES Error: %s" % e.error)
