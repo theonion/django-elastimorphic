@@ -22,6 +22,11 @@ class SeparateIndexable(PolymorphicIndexable, PolymorphicModel):
         })
         return properties
 
+    @classmethod
+    def get_serializer_class(cls):
+        from .serializers import SeparateIndexableSerializer
+        return SeparateIndexableSerializer
+
 
 class ParentIndexable(PolymorphicIndexable, PolymorphicModel):
     foo = models.CharField(max_length=255)
@@ -41,6 +46,11 @@ class ParentIndexable(PolymorphicIndexable, PolymorphicModel):
         })
         return properties
 
+    @classmethod
+    def get_serializer_class(cls):
+        from .serializers import ParentIndexableSerializer
+        return ParentIndexableSerializer
+
 
 class ChildIndexable(ParentIndexable):
     bar = models.IntegerField()
@@ -58,6 +68,11 @@ class ChildIndexable(ParentIndexable):
         })
         return properties
 
+    @classmethod
+    def get_serializer_class(cls):
+        from .serializers import ChildIndexableSerializer
+        return ChildIndexableSerializer
+
 
 class GrandchildIndexable(ChildIndexable):
     baz = models.DateField()
@@ -74,3 +89,8 @@ class GrandchildIndexable(ChildIndexable):
             "baz": {"type": "date"}
         })
         return properties
+
+    @classmethod
+    def get_serializer_class(cls):
+        from .serializers import GrandchildIndexableSerializer
+        return GrandchildIndexableSerializer
