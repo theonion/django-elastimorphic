@@ -73,4 +73,8 @@ class SerializerTestCase(BaseIndexableTestCase):
         data['polymorphic_ctype'] = separate_ctype.id
         serializer = serializer_class(data=data)
         self.assertTrue(serializer.is_valid())
+        serializer.save()
         self.assertIsInstance(serializer.object, GrandchildIndexable)
+        # and check the ctype anyways:
+        grandchild_ctype = ContentType.objects.get_for_model(GrandchildIndexable, for_concrete_model=False)
+        self.assertEqual(indexable.polymorphic_ctype_id, grandchild_ctype.id)
