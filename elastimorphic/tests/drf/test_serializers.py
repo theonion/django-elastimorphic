@@ -1,8 +1,10 @@
 from datetime import date
-from elastimorphic.tests.base import BaseIndexableTestCase
 
+from django.contrib.contenttypes.models import ContentType
+
+from elastimorphic.tests.base import BaseIndexableTestCase
 from elastimorphic.tests.testapp.models import (
-    ChildIndexable, GrandchildIndexable, ParentIndexable
+    ChildIndexable, GrandchildIndexable, ParentIndexable, SeparateIndexable
 )
 from elastimorphic.tests.testapp.serializers import (
     PolymorphicParentIndexableSerializer,
@@ -58,3 +60,17 @@ class SerializerTestCase(BaseIndexableTestCase):
         for original_datum, serialized_datum in zip([d[1] for d in data], serializer.data):
             for key, value in original_datum.items():
                 self.assertEqual(value, serialized_datum[key])
+
+    def test_prevent_type_change(self):
+        """Make sure a malicious user can't change content type."""
+        indexable = GrandchildIndexable(foo="AirWolf", bar=10, baz=date(1980, 1, 1))
+        indexable.save()
+        serializer_class = indexable.get_serializer_class()
+        serializer = serializer_class(indexable)
+        data = serializer.data
+        # change the polymorphic content type to something different
+        separate_ctype = ContentType.objects.get_for_model(SeparateIndexable, for_concrete_model=False)
+        data['polymorphic_ctype'] = separate_ctype.id
+        serializer = serializer_class(data=data)
+        self.assertTrue(serializer.is_valid())
+        self.assertIsInstance(serializer.object, GrandchildIndexable)
