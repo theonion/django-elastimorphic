@@ -228,6 +228,9 @@ class PolymorphicIndexable(object):
                 },
                 "properties": cls.get_mapping_properties(),
                 "dynamic": "strict",
+                "_all": {
+                    "analyzer": "html"
+                }
             }
         }
 
