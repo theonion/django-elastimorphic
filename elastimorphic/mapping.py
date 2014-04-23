@@ -3,6 +3,8 @@ from datetime import datetime
 from django.db import models
 from django.utils import timezone
 
+from polymorphic import PolymorphicModel
+
 
 class MappingField(object):
     
@@ -65,6 +67,26 @@ class DateField(MappingField):
         return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f+00:00").replace(tzinfo=timezone.utc)
 
 
+class RelatedField(MappingField):
+
+    def __init__(self, model, mapping_class=None, *args, **kwargs):
+        super(RelatedField, self).__init__()
+        self.mapping["type"] = "object"
+        self.mapping_class = mapping_class or Mapping
+        self.model = model
+        self.mapping["properties"] = self.mapping_class(model=self.model).get_properties()
+
+    def to_es(self, value):
+        if value:
+            return self.mapping_class(model=self.model).extract_document(value)
+        return None
+
+    def from_es(self, value):
+        if value:
+            return self.mapping_class(model=self.model).load_document(value)
+        return None
+
+
 class Mapping(object):
 
     field_mappings = {
@@ -81,51 +103,56 @@ class Mapping(object):
         self.fields = {}
 
         for field in self.model._meta.fields:
+            if field.name == "polymorphic_ctype":
+                continue
+
             field_mapping = getattr(self, field.name, None)
             if isinstance(field_mapping, MappingField):
                 self.fields[field.name] = field_mapping
                 continue
 
+            if field.__class__ == models.ForeignKey:
+                self.fields[field.name] = RelatedField(model=field.related.parent_model)
+
             if field.__class__ in self.field_mappings:
                 self.fields[field.name] = self.field_mappings[field.__class__]
 
-    def mapping(self):
-
+    def get_properties(self):
         properties = {
-            "polymorphic_ctype": {"type": "integer"},
-            self.model.polymorphic_primary_key_name: {"type": "integer"}
+            "pk": {"type": "integer"}
         }
+        if issubclass(self.model, PolymorphicModel):
+            properties["polymorphic_ctype"] = {"type": "integer"}
         for key, value in self.fields.items():
             properties[key] = value.mapping
+        return properties
+
+    def mapping(self):
         return {
             self.model.get_mapping_type_name(): {
                 "_id": {
-                    "path": self.model.polymorphic_primary_key_name
+                    "path": "pk"
                 },
-                "properties": properties,
+                "properties": self.get_properties(),
                 "dynamic": "strict"
             }
         }
 
     def extract_document(self, instance):
         document = {
-            "polymorphic_ctype": instance.polymorphic_ctype_id,
-            instance.polymorphic_primary_key_name: instance.id
+            "pk": instance.pk
         }
+        if issubclass(self.model, PolymorphicModel):
+            document["polymorphic_ctype"] = instance.polymorphic_ctype_id
         for name, field in self.fields.items():
             value = getattr(instance, name, None)
+            print(name, value)
             document[name] = field.to_es(value)
         return document
 
     def load_document(self, document):
         instance = self.model()
-        pk_attr_name = self.model.polymorphic_primary_key_name
-        setattr(instance, pk_attr_name, document[pk_attr_name])
-
-        # Fix up the _ptr fields
-        for field in instance._meta.fields:
-            if isinstance(field, models.OneToOneField) and field.name.endswith("_ptr"):
-                setattr(instance, field.get_attname_column()[0], document[pk_attr_name])
+        setattr(instance, "pk", document["pk"])
 
         for name, field in self.fields.items():
             value = document[name]

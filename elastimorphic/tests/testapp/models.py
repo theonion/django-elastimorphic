@@ -59,8 +59,13 @@ class ChildIndexable(ParentIndexable):
         return properties
 
 
+class RelatedModel(models.Model):
+    qux = models.CharField(max_length=255, null=True, blank=True)
+
+
 class GrandchildIndexable(ChildIndexable):
     baz = models.DateField()
+    related = models.ForeignKey(RelatedModel, null=True, blank=True)
 
     def extract_document(self):
         doc = super(GrandchildIndexable, self).extract_document()
