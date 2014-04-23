@@ -201,7 +201,7 @@ class PolymorphicIndexable(object):
         """
         return {
             "polymorphic_ctype": self.polymorphic_ctype_id,
-            self.polymorphic_primary_key_name: self.id
+            "pk": self.pk
         }
 
     @classmethod
@@ -224,7 +224,7 @@ class PolymorphicIndexable(object):
         return {
             cls.get_mapping_type_name(): {
                 "_id": {
-                    "path": cls.polymorphic_primary_key_name
+                    "path": "pk"
                 },
                 "properties": cls.get_mapping_properties(),
                 "dynamic": "strict",
@@ -258,7 +258,7 @@ class PolymorphicIndexable(object):
 
         return {
             "polymorphic_ctype": {"type": "integer"},
-            cls.polymorphic_primary_key_name: {"type": "integer"}
+            "pk": {"type": "integer"}
         }
 
     @classmethod
@@ -289,7 +289,7 @@ class PolymorphicIndexable(object):
         es.update(
             self.get_index_name(),
             self.get_mapping_type_name(),
-            self.id,
+            self.pk,
             doc=doc,
             upsert=doc
         )
