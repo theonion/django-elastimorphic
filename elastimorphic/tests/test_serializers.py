@@ -12,7 +12,7 @@ class GrandchildIndexableMapping(Mapping):
 class SerializerTestCase(TestCase):
 
     def test_automatic_mapping(self):
-        mapping = Mapping(model=GrandchildIndexable)
+        mapping = GrandchildIndexable.Mapping(model=GrandchildIndexable)
         reference_mapping = {
             "id": {"type": "integer"},
             "polymorphic_ctype": {"type": "integer"},
