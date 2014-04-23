@@ -35,6 +35,6 @@ Once you have models that inherit from PolymorphicIndexable, you'll need to crea
     python manage.py synces
 
 Migrating Indexes
-================
+=================
 
 Lorem ipsum
