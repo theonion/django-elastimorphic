@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from django.db import models
+from django.utils import timezone
 
 
 class MappingField(object):
@@ -12,7 +15,7 @@ class MappingField(object):
             self.mapping["index_name"] = index_name
         if store:
             assert store in ["yes", "no"]
-            self.mapping["store"]
+            self.mapping["store"] = store
         if index:
             assert index in ["analyzed", "not_analyzed", "no"]
             self.mapping["index"] = index
@@ -21,10 +24,10 @@ class MappingField(object):
             self.mapping["boost"] = boost
 
     def to_es(self, value):
-        pass
+        return value
 
     def from_es(self, value):
-        pass
+        return value
 
 
 class StringField(MappingField):
@@ -55,6 +58,12 @@ class DateField(MappingField):
             assert isinstance(format, basestring)
             self.mapping["format"] = format
 
+    def to_es(self, value):
+        return value.replace(tzinfo=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+
+    def from_es(self, value):
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f+00:00").replace(tzinfo=timezone.utc)
+
 
 class Mapping(object):
 
@@ -75,15 +84,51 @@ class Mapping(object):
             field_mapping = getattr(self, field.name, None)
             if isinstance(field_mapping, MappingField):
                 self.fields[field.name] = field_mapping
+                continue
 
             if field.__class__ in self.field_mappings:
                 self.fields[field.name] = self.field_mappings[field.__class__]
 
     def mapping(self):
-        _mapping = {
+
+        properties = {
             "polymorphic_ctype": {"type": "integer"},
             self.model.polymorphic_primary_key_name: {"type": "integer"}
         }
         for key, value in self.fields.items():
-            _mapping[key] = value.mapping
-        return _mapping
+            properties[key] = value.mapping
+        return {
+            self.model.get_mapping_type_name(): {
+                "_id": {
+                    "path": self.model.polymorphic_primary_key_name
+                },
+                "properties": properties,
+                "dynamic": "strict"
+            }
+        }
+
+    def extract_document(self, instance):
+        document = {
+            "polymorphic_ctype": instance.polymorphic_ctype_id,
+            instance.polymorphic_primary_key_name: instance.id
+        }
+        for name, field in self.fields.items():
+            value = getattr(instance, name, None)
+            document[name] = field.to_es(value)
+        return document
+
+    def load_document(self, document):
+        instance = self.model()
+        pk_attr_name = self.model.polymorphic_primary_key_name
+        setattr(instance, pk_attr_name, document[pk_attr_name])
+
+        # Fix up the _ptr fields
+        for field in instance._meta.fields:
+            if isinstance(field, models.OneToOneField) and field.name.endswith("_ptr"):
+                setattr(instance, field.get_attname_column()[0], document[pk_attr_name])
+
+        for name, field in self.fields.items():
+            value = document[name]
+            setattr(instance, name, field.from_es(value))
+            
+        return instance

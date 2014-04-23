@@ -5,7 +5,7 @@ from elasticutils import get_es, MappingType, S, SearchResults
 
 from .conf import settings
 from .models import polymorphic_indexable_registry
-from .serializers import Mapping
+from .mapping import Mapping
 
 
 class ModelSearchResults(SearchResults):
@@ -304,3 +304,4 @@ class PolymorphicIndexable(object):
 
     class Mapping(Mapping):
         pass
+
