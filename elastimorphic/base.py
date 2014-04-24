@@ -219,17 +219,17 @@ class PolymorphicIndexable(object):
     def get_es(cls):
         return get_es(urls=settings.ES_URLS)
 
-    @classmethod
-    def get_mapping(cls):
-        return {
-            cls.get_mapping_type_name(): {
-                "_id": {
-                    "path": "pk"
-                },
-                "properties": cls.get_mapping_properties(),
-                "dynamic": "strict",
-            }
-        }
+    # @classmethod
+    # def get_mapping(cls):
+    #     return {
+    #         cls.get_mapping_type_name(): {
+    #             "_id": {
+    #                 "path": "pk"
+    #             },
+    #             "properties": cls.get_mapping_properties(),
+    #             "dynamic": "strict",
+    #         }
+    #     }
 
     @classmethod
     def get_mapping_properties(cls):

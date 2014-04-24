@@ -2,6 +2,7 @@ from django.db import models
 from polymorphic import PolymorphicModel
 
 from elastimorphic import PolymorphicIndexable, SearchManager
+from elastimorphic.mappings import MappingMixin, DocumentType, fields
 
 
 class SeparateIndexable(PolymorphicIndexable, PolymorphicModel):
@@ -23,7 +24,7 @@ class SeparateIndexable(PolymorphicIndexable, PolymorphicModel):
         return properties
 
 
-class ParentIndexable(PolymorphicIndexable, PolymorphicModel):
+class ParentIndexable(PolymorphicIndexable, PolymorphicModel, MappingMixin):
     foo = models.CharField(max_length=255)
 
     search_objects = SearchManager()
@@ -79,3 +80,8 @@ class GrandchildIndexable(ChildIndexable):
             "baz": {"type": "date"}
         })
         return properties
+
+    class Mapping(DocumentType):
+        foo = fields.StringField(index="not_analyzed")
+        bar = fields.IntegerField(store="yes")
+        baz = fields.DateField(format="YYYY-MM-dd")
