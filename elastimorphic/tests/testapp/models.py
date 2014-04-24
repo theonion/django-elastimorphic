@@ -30,6 +30,6 @@ class GrandchildIndexable(ChildIndexable):
     related = models.ForeignKey(RelatedModel, null=True, blank=True)
 
     class Mapping(DocumentType):
-        foo = fields.StringField(index="not_analyzed")
+        foo = fields.StringField()
         bar = fields.IntegerField(store="yes")
         baz = fields.DateField()

@@ -21,7 +21,7 @@ class MappingTestCase(TestCase):
                     "parentindexable_ptr_id": {"type": "integer"},
                     "childindexable_ptr_id": {"type": "integer"},
 
-                    "foo": {"type": "string", "index": "not_analyzed"},
+                    "foo": {"type": "string"},
                     "bar": {"type": "integer", "store": "yes"},
                     "baz": {"type": "date"},
 

@@ -52,13 +52,6 @@ class IndexableTestCase(BaseIndexableTestCase):
     def test_get_index_mappings(self):
         pass
 
-    def test_primary_key_name_is_correct(self):
-        a, b, c = [klass.get_mapping().values()[0]["_id"]["path"] for klass in (
-            ParentIndexable, ChildIndexable, GrandchildIndexable
-        )]
-        self.assertEqual(a, b)
-        self.assertEqual(b, c)
-
     def test_search(self):
         self.assertEqual(ParentIndexable.search_objects.s().count(), 3)
         self.assertEqual(ParentIndexable.search_objects.query(bar=69).count(), 2)
