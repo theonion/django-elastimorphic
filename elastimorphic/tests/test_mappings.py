@@ -1,17 +1,9 @@
 import datetime
 
 from django.test import TestCase
-from django.utils.timezone import utc
+from django.utils import timezone
 
-from elastimorphic.tests.testapp.models import GrandchildIndexable, RelatedModel
-from elastimorphic.mappings import DocumentType, fields
-
-
-class TestDoctype(DocumentType):
-    
-    foo = fields.StringField(index="not_analyzed")
-    bar = fields.IntegerField(store="yes")
-    baz = fields.DateField(format="YYYY-MM-dd")
+from elastimorphic.tests.testapp.models import GrandchildIndexable, ChildIndexable, RelatedModel
 
 
 class MappingTestCase(TestCase):
@@ -19,69 +11,67 @@ class MappingTestCase(TestCase):
     maxDiff = 4000
 
     def test_manual_mapping(self):
-        # {
-        #     "_id": {"path": "pk"},
-        #     "dynamic": "strict",
-        #     "properties": {
-        #         "foo": {"type": "string", "index": "not_analyzed"},
-        #         "bar": {"type": "integer", "store": "yes"},
-        #         "baz": {"type": "date", "format": "YYYY-MM-dd"},
-        #     }
-        # }
-        self.assertEqual(GrandchildIndexable.get_mapping()["_id"], {"path": "pk"})
-        self.assertEqual(GrandchildIndexable.get_mapping()["dynamic"], "strict")
-        self.assertEqual(GrandchildIndexable.get_mapping()["properties"]["foo"], {"type": "string", "index": "not_analyzed"})
-        self.assertEqual(GrandchildIndexable.get_mapping()["properties"]["bar"], {"type": "integer", "store": "yes"})
-        self.assertEqual(GrandchildIndexable.get_mapping()["properties"]["baz"], {"type": "date", "format": "YYYY-MM-dd"},)
+        reference_mapping = {
+            "testapp_grandchildindexable": {
+                "_id": {"path": "childindexable_ptr_id"},
+                "dynamic": "strict",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "polymorphic_ctype_id": {"type": "integer"},
+                    "parentindexable_ptr_id": {"type": "integer"},
+                    "childindexable_ptr_id": {"type": "integer"},
 
+                    "foo": {"type": "string", "index": "not_analyzed"},
+                    "bar": {"type": "integer", "store": "yes"},
+                    "baz": {"type": "date"},
 
-    # def test_automatic_mapping(self):
-    #     mapping = DocumentType(model=GrandchildIndexable)
-    #     reference_mapping = {
-    #         "testapp_grandchildindexable": {
-    #             "_id": {"path": "pk"},
-    #             "dynamic": "strict",
-    #             "properties": {
-    #                 "baz": {"type": "date"},
-    #                 "foo": {"type": "string"},
-    #                 "bar": {"type": "integer"},
-    #                 "pk": {"type": "integer"},
-    #                 "polymorphic_ctype": {"type": "integer"},
-    #                 "related": {
-    #                     "type": "object",
-    #                     "properties": {
-    #                         "pk": {"type": "integer"},
-    #                         "qux": {"type": "string"}
-    #                     }
-    #                 }
-    #             }
-    #         }
-    #     }
-    #     self.assertEqual(reference_mapping, mapping.mapping())
+                    "related_id": {"type": "integer"},
+                }
+            }
+        }
 
-    # def test_extract_document(self):
-    #     mapping = Mapping(model=GrandchildIndexable)
+        self.assertEqual(reference_mapping, GrandchildIndexable.get_mapping())
 
-    #     related = RelatedModel.objects.create(qux="qux")
-    #     test_obj = GrandchildIndexable(
-    #         foo="Testing",
-    #         bar=7,
-    #         baz=datetime.datetime(year=2014, month=4, day=23, hour=9).replace(tzinfo=utc),
-    #         related=related
-    #     )
-    #     test_obj.save(index=False)
-    #     reference_document = {
-    #         "pk": test_obj.pk,
-    #         "foo": "Testing",
-    #         "bar": 7,
-    #         "baz": "2014-04-23T09:00:00.000000+00:00",
-    #         "polymorphic_ctype": test_obj.polymorphic_ctype_id,
-    #         "related": {
-    #             "pk": related.pk,
-    #             "qux": "qux"
-    #         }
-    #     }
-    #     self.assertEqual(reference_document, mapping.extract_document(test_obj))
+    def test_automatic_mapping(self):
+        reference_mapping = {
+            "testapp_childindexable": {
+                "_id": {"path": "parentindexable_ptr_id"},
+                "dynamic": "strict",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "polymorphic_ctype_id": {"type": "integer"},
+                    "parentindexable_ptr_id": {"type": "integer"},
+                    "foo": {"type": "string"},
+                    "bar": {"type": "integer"}
+                }
+            }
+        }
+
+        self.assertDictEqual(reference_mapping, ChildIndexable.get_mapping())
+
+    def test_extract_document(self):
+
+        related = RelatedModel.objects.create(qux="qux")
+        test_obj = GrandchildIndexable(
+            foo="Testing",
+            bar=7,
+            baz=datetime.datetime(year=2014, month=4, day=23, hour=9).replace(tzinfo=timezone.utc),
+            related=related
+        )
+        test_obj.save(index=False)
+        reference_document = {
+            "id": test_obj.pk,
+            "parentindexable_ptr_id": test_obj.pk,
+            "childindexable_ptr_id": test_obj.pk,
+            "polymorphic_ctype_id": test_obj.polymorphic_ctype_id,
+
+            "foo": "Testing",
+            "bar": 7,
+            "baz": "2014-04-23T09:00:00+00:00",
+            
+            "related_id": related.id
+        }
+        self.assertEqual(reference_document, test_obj.extract_document())
 
     # def test_load_document(self):
     #     mapping = Mapping(model=GrandchildIndexable)

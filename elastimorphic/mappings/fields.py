@@ -9,7 +9,6 @@ class SearchField(object):
     attrs = []
 
     # Used to maintain the order of fields as defined in the class.
-    _creation_order = 0
 
     def __init__(self, *args, **kwargs):
 
@@ -21,11 +20,6 @@ class SearchField(object):
         for attr in kwargs.keys():
             self.attrs.append(attr)
             setattr(self, attr, kwargs.pop(attr, None))
-
-        # Store this fields order
-        self._creation_order = SearchField._creation_order
-        # Increment order number for future fields.
-        SearchField._creation_order += 1
 
     def to_es(self, value):
         return value

@@ -5,6 +5,7 @@ from elasticutils import get_es, MappingType, S, SearchResults
 
 from .conf import settings
 from .models import polymorphic_indexable_registry
+from .mappings import DocumentType, get_search_field
 
 
 class ModelSearchResults(SearchResults):
@@ -174,36 +175,6 @@ class PolymorphicIndexable(object):
     should implement the :func:`extract_document` instance method, and the :func:`get_mapping_properties` classmethod.
     """
 
-    def extract_document(self):
-        """Returns a python dictionary, representing the Elasticseach document for this model instance.
-
-        By default, this just includes the `polymorphic_ctype id`_, and the primary key, e.g.::
-
-            {
-                "polymorphic_ctype": 1,
-                "id": 1
-            }
-
-        If when you override this method, be sure to at least return the default fields. This is best
-        done by simply updating the parent's data. For example::
-
-            def extract_document(self):
-                doc = super(ParentModel, self).extract_document()
-                doc.update({
-                    "bar": self.bar
-                })
-                return doc
-
-        It's also wise to be sure that your data is properly modeled (by overriding :func:`get_mapping`), so that
-        you're not letting Elasticseach decide your mappings for you.
-
-        .. _polymorphic_ctype id: https://github.com/chrisglass/django_polymorphic/blob/master/polymorphic/query.py#L190
-        """
-        return {
-            "polymorphic_ctype": self.polymorphic_ctype_id,
-            "pk": self.pk
-        }
-
     @classmethod
     def get_base_class(cls):
         while cls.__bases__[0] != PolymorphicIndexable:
@@ -219,52 +190,39 @@ class PolymorphicIndexable(object):
     def get_es(cls):
         return get_es(urls=settings.ES_URLS)
 
-    # @classmethod
-    # def get_mapping(cls):
-    #     return {
-    #         cls.get_mapping_type_name(): {
-    #             "_id": {
-    #                 "path": "pk"
-    #             },
-    #             "properties": cls.get_mapping_properties(),
-    #             "dynamic": "strict",
-    #         }
-    #     }
-
     @classmethod
-    def get_mapping_properties(cls):
-        """Returns a python dictionary, representing the Elasticseach mapping for this model.
+    def get_mapping_class(cls):
+        doctype_class = type("{}_Mapping".format(cls.__name__), (DocumentType,), {})
+        if hasattr(cls, "Mapping"):
+            doctype_class = cls.Mapping
 
-        By default, this just includes the primary key of this object, e.g.::
+        exclude = getattr(doctype_class, "exclude", [])
 
-            {
-                "polymorphic_ctype": {"type": "integer"},
-                "id": {"type": "integer"}
-            }
+        for field_pair in doctype_class.fields:
+            exclude.append(field_pair[0])
 
-        If when you override this method, be sure to at least return the default fields. For example::
+        for field in cls._meta.fields:
+            if field.name in exclude:
+                continue
 
-            @classmethod
-            def get_mapping_properties(cls):
-                properties = super(ParentModel, cls).get_mapping_properties()
-                properties.update({
-                    "bar": {"type": "integer"}
-                })
-                return properties
-
-        You should make sure that the data modeled here matches with what's being returned by
-        :func:`extract_document`, so that you're not letting Elasticseach decide your mappings for you.
-        """
-
-        return {
-            "polymorphic_ctype": {"type": "integer"},
-            "pk": {"type": "integer"}
-        }
+            field_tuple = get_search_field(field)
+            if field_tuple:
+                doctype_class.fields.append(field_tuple)
+        return doctype_class
 
     @classmethod
     def get_mapping_type_name(cls):
         """By default, we'll be using the app_label and module_name properties to get the ES doctype for this object"""
         return "%s_%s" % (cls._meta.app_label, cls._meta.module_name)
+
+    @classmethod
+    def get_mapping(cls):
+        doctype_class = cls.get_mapping_class()
+
+        mapping = doctype_class().get_mapping()
+        mapping["dynamic"] = "strict"
+        mapping["_id"] = {"path": cls._meta.pk.get_attname()}
+        return {cls.get_mapping_type_name(): mapping}
 
     @classmethod
     def get_mapping_type_names(cls, exclude_base=False):
@@ -275,6 +233,16 @@ class PolymorphicIndexable(object):
         for subclass in cls.__subclasses__():
             names.extend(subclass.get_mapping_type_names())
         return names
+
+    def extract_document(self):
+        doctype_class = self.get_mapping_class()
+
+        doctype = doctype_class()
+        document = {}
+        for name, field in doctype.fields:
+            value = getattr(self, name, None)
+            document[name] = field.to_es(value)
+        return document
 
     @classmethod
     def get_doctypes(cls):
