@@ -31,8 +31,8 @@ SIMPLE_FIELD_MAPPINGS = {
 }
 
 
-def get_search_field(field):
-    """Returns a tuple (name, field) representing the django field as a search_field
+def search_field_factory(field):
+    """Returns a tuple (name, field) representing the Django model field as a SearchField
 
     """
 
@@ -45,3 +45,25 @@ def get_search_field(field):
     if klass:
         return (field.name, klass())
     return None
+
+
+def doctype_class_factory(model):
+    """Given a Django model, return a DocumentType class to map it"""
+
+    doctype_class = type("{}_Mapping".format(model.__name__), (DocumentType,), {})
+    if hasattr(model, "Mapping"):
+        doctype_class = model.Mapping
+
+    exclude = getattr(doctype_class, "exclude", [])
+
+    for field_pair in doctype_class.fields:
+        exclude.append(field_pair[0])
+
+    for field in model._meta.fields:
+        if field.name in exclude:
+            continue
+
+        field_tuple = search_field_factory(field)
+        if field_tuple:
+            doctype_class.fields.append(field_tuple)
+    return doctype_class

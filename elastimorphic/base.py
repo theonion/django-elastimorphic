@@ -5,7 +5,7 @@ from elasticutils import get_es, MappingType, S, SearchResults
 
 from .conf import settings
 from .models import polymorphic_indexable_registry
-from .mappings import DocumentType, get_search_field
+from .mappings import DocumentType, doctype_class_factory
 
 
 class ModelSearchResults(SearchResults):
@@ -124,91 +124,12 @@ class SearchManager(models.Manager):
         return self.s().filter(**kwargs)
 
 
-class PolymorphicIndexable(object):
-    """Mixin for PolymorphicModel, allowing easy indexing and querying.
-
-    This class is a mixin, intended to be used on PolymorphicModel classes. To use it,
-    you just mix it in, and implement a few methods. For example:
-
-        .. code-block:: python
-
-            from django.db import models
-            from elastimorphic import PolymorphicIndexable, SearchManager
-            from polymorphic import PolymorphicModel
-
-            class ParentIndexable(PolymorphicIndexable, PolymorphicModel):
-                foo = models.CharField(max_length=255)
-
-                search_objects = SearchManager()
-
-                def extract_document(self):
-                    doc = super(ParentIndexable, self).extract_document()
-                    doc["foo"] = self.foo
-                    return doc
-
-                @classmethod
-                def get_mapping_properties(cls):
-                    properties = super(ParentIndexable, cls).get_mapping_properties()
-                    properties.update({
-                        "foo": {"type": "string"}
-                    })
-                    return properties
-
-            class ChildIndexable(ParentIndexable):
-                bar = models.IntegerField()
-
-                def extract_document(self):
-                    doc = super(ChildIndexable, self).extract_document()
-                    doc["bar"] = self.bar
-                    return doc
-
-                @classmethod
-                def get_mapping_properties(cls):
-                    properties = super(ChildIndexable, cls).get_mapping_properties()
-                    properties.update({
-                        "bar": {"type": "integer"}
-                    })
-                    return properties
-
-    With this example code, after syncdb a new Elasticsearch index named `example_parentindexable` would
-    be created, with two mappings: `example_parentindexable` and `example_childindexable`. At minimum, you
-    should implement the :func:`extract_document` instance method, and the :func:`get_mapping_properties` classmethod.
-    """
-
-    @classmethod
-    def get_base_class(cls):
-        while cls.__bases__[0] != PolymorphicIndexable:
-            cls = cls.__bases__[0]
-        return cls
-
-    @classmethod
-    def get_index_name(cls):
-        index_prefix = slugify(settings.DATABASES[DEFAULT_DB_ALIAS].get("NAME", "bulbs"))
-        return "%s_%s" % (index_prefix, cls.get_base_class()._meta.db_table)
+class Indexable(object):
+    """A mixing for Django's Model, allowing easy indexing and querying."""
 
     @classmethod
     def get_es(cls):
         return get_es(urls=settings.ES_URLS)
-
-    @classmethod
-    def get_mapping_class(cls):
-        doctype_class = type("{}_Mapping".format(cls.__name__), (DocumentType,), {})
-        if hasattr(cls, "Mapping"):
-            doctype_class = cls.Mapping
-
-        exclude = getattr(doctype_class, "exclude", [])
-
-        for field_pair in doctype_class.fields:
-            exclude.append(field_pair[0])
-
-        for field in cls._meta.fields:
-            if field.name in exclude:
-                continue
-
-            field_tuple = get_search_field(field)
-            if field_tuple:
-                doctype_class.fields.append(field_tuple)
-        return doctype_class
 
     @classmethod
     def get_mapping_type_name(cls):
@@ -217,7 +138,7 @@ class PolymorphicIndexable(object):
 
     @classmethod
     def get_mapping(cls):
-        doctype_class = cls.get_mapping_class()
+        doctype_class = doctype_class_factory(cls)
 
         mapping = doctype_class().get_mapping()
         mapping["dynamic"] = "strict"
@@ -225,17 +146,12 @@ class PolymorphicIndexable(object):
         return {cls.get_mapping_type_name(): mapping}
 
     @classmethod
-    def get_mapping_type_names(cls, exclude_base=False):
-        """Returns the mapping type name of this class and all of its descendants."""
-        names = []
-        if not exclude_base:
-            names.append(cls.get_mapping_type_name())
-        for subclass in cls.__subclasses__():
-            names.extend(subclass.get_mapping_type_names())
-        return names
+    def get_index_name(cls):
+        index_prefix = slugify(settings.DATABASES[DEFAULT_DB_ALIAS].get("NAME", "bulbs"))
+        return "%s_%s" % (index_prefix, cls._meta.db_table)
 
     def extract_document(self):
-        doctype_class = self.get_mapping_class()
+        doctype_class = doctype_class_factory(self.__class__)
 
         doctype = doctype_class()
         document = {}
@@ -243,10 +159,6 @@ class PolymorphicIndexable(object):
             value = getattr(self, name, None)
             document[name] = field.to_es(value)
         return document
-
-    @classmethod
-    def get_doctypes(cls):
-        return polymorphic_indexable_registry.get_doctypes(cls)
 
     def index(self, refresh=False):
         es = self.get_es()
@@ -263,8 +175,38 @@ class PolymorphicIndexable(object):
         )
 
     def save(self, index=True, refresh=False, *args, **kwargs):
-        result = super(PolymorphicIndexable, self).save(*args, **kwargs)
+        result = super(Indexable, self).save(*args, **kwargs)
         if index:
             self.index(refresh=refresh)
         self._index = index
         return result
+
+
+class PolymorphicIndexable(Indexable):
+    """Mixin for PolymorphicModel, allowing easy indexing and querying.
+    """
+
+    @classmethod
+    def get_base_class(cls):
+        while cls.__bases__[0] != PolymorphicIndexable:
+            cls = cls.__bases__[0]
+        return cls
+
+    @classmethod
+    def get_index_name(cls):
+        index_prefix = slugify(settings.DATABASES[DEFAULT_DB_ALIAS].get("NAME", "bulbs"))
+        return "%s_%s" % (index_prefix, cls.get_base_class()._meta.db_table)
+
+    @classmethod
+    def get_mapping_type_names(cls, exclude_base=False):
+        """Returns the mapping type name of this class and all of its descendants."""
+        names = []
+        if not exclude_base:
+            names.append(cls.get_mapping_type_name())
+        for subclass in cls.__subclasses__():
+            names.extend(subclass.get_mapping_type_names())
+        return names
+
+    @classmethod
+    def get_doctypes(cls):
+        return polymorphic_indexable_registry.get_doctypes(cls)
