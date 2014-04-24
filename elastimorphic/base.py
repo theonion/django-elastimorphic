@@ -5,7 +5,7 @@ from elasticutils import get_es, MappingType, S, SearchResults
 
 from .conf import settings
 from .models import polymorphic_indexable_registry
-from .mappings import DocumentType, doctype_class_factory
+from .mappings import doctype_class_factory
 
 
 class ModelSearchResults(SearchResults):

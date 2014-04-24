@@ -8,14 +8,7 @@ class SearchField(object):
     field_type = None
     attrs = []
 
-    # Used to maintain the order of fields as defined in the class.
-
     def __init__(self, *args, **kwargs):
-
-        # These are special.
-        for attr in ('index_fieldname', 'is_multivalue'):
-            setattr(self, attr, kwargs.pop(attr, None))
-
         # Set all kwargs on self for later access.
         for attr in kwargs.keys():
             self.attrs.append(attr)

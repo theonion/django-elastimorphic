@@ -16,7 +16,6 @@ class DocumentType(object):
     def get_mapping(self):
         fields = {}
         for name, field in self.fields:
-            name = field.index_fieldname or name
             defn = field.get_definition()
             fields[name] = defn
 
