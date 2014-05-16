@@ -6,8 +6,9 @@ import datetime
 from django.core.management import call_command
 from django.test import TestCase
 
+import elasticsearch
+
 from elasticutils import get_es
-from pyelasticsearch.exceptions import ElasticHttpError
 
 from elastimorphic.conf import settings
 from elastimorphic.models import polymorphic_indexable_registry
@@ -95,23 +96,24 @@ class ManagementTestCase(BaseIndexableTestCase):
 
     def test_synces(self):
         backup_settings = copy.copy(settings.ES_SETTINGS)
+        test_tokenizer = {
+            "type": "edgeNGram",
+            "min_gram": "3",
+            "max_gram": "4"
+        }
         settings.ES_SETTINGS.update({
             "index": {
                 "analysis": {
                     "tokenizer": {
-                        "edge_ngram_test_tokenizer": {
-                            "type": "edgeNGram",
-                            "min_gram": "3",
-                            "max_gram": "4"
-                        }
+                        "edge_ngram_test_tokenizer": test_tokenizer
                     }
                 }
             }
         })
         call_command("synces", self.index_suffix, force=True)
-        es_settings = self.es.get_settings(ParentIndexable.get_index_name())
+        es_settings = self.es.indices.get_settings(index=ParentIndexable.get_index_name())
         index_settings = es_settings[es_settings.keys()[0]]["settings"]
-        self.assertTrue("index.analysis.tokenizer.edge_ngram_test_tokenizer.type" in index_settings)
+        self.assertEqual(index_settings["index"]["analysis"]["tokenizer"]["edge_ngram_test_tokenizer"], test_tokenizer)
 
         settings.ES_SETTINGS = backup_settings
 
@@ -152,7 +154,12 @@ class ManagementTestCase(BaseIndexableTestCase):
         es = get_es(urls=settings.ES_URLS)
         doc = obj.extract_document()
         doc["foo"] = "DATA LOVERS"
-        es.update(obj.get_index_name(), obj.get_mapping_type_name(), obj.id, doc=doc, upsert=doc, refresh=True)
+        es.update(
+            index=obj.get_index_name(),
+            doc_type=obj.get_mapping_type_name(),
+            id=obj.id,
+            body=dict(doc=doc, doc_as_upsert=True),
+            refresh=True)
 
         # Make sure the bad data works
         self.assertEqual(ParentIndexable.search_objects.query(foo__match="DATA LOVERS").count(), 1)
@@ -207,9 +214,13 @@ class ManagementTestCase(BaseIndexableTestCase):
 
 class TestDynamicMappings(BaseIndexableTestCase):
 
+    maxDiff = 2000
+
     def test_bad_index(self):
         """Check to make sure that the mappings are strict"""
-        mapping = self.es.get_mapping(ParentIndexable.get_index_name(), ParentIndexable.get_mapping_type_name())
+        index_mapping = self.es.indices.get_mapping(index=ParentIndexable.get_index_name(), doc_type=ParentIndexable.get_mapping_type_name())
+        alias_name = index_mapping.keys()[0]
+        mapping = index_mapping[alias_name]["mappings"]
         self.assertDictEqual(mapping, ParentIndexable.get_mapping())
 
         obj = ParentIndexable.objects.create(foo="Fighters")
@@ -217,16 +228,17 @@ class TestDynamicMappings(BaseIndexableTestCase):
         doc = obj.extract_document()
         doc["extra"] = "Just an additional string"
 
-        with self.assertRaises(ElasticHttpError):
+        with self.assertRaises(elasticsearch.RequestError):
             self.es.update(
                 obj.get_index_name(),
                 obj.get_mapping_type_name(),
                 obj.id,
-                doc=doc,
-                upsert=doc
+                body=dict(doc=doc, doc_as_upsert=True)
             )
 
-        mapping = self.es.get_mapping(ParentIndexable.get_index_name(), ParentIndexable.get_mapping_type_name())
+        index_mapping = self.es.indices.get_mapping(index=ParentIndexable.get_index_name(), doc_type=ParentIndexable.get_mapping_type_name())
+        alias_name = index_mapping.keys()[0]
+        mapping = index_mapping[alias_name]["mappings"]
         self.assertDictEqual(mapping, ParentIndexable.get_mapping())
 
 

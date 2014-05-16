@@ -20,7 +20,7 @@ class Command(BaseCommand):
         es = get_es()
         alias_actions = []
         # remove existing indexes using the aliases we want
-        existing_aliases = es.aliases()
+        existing_aliases = es.indices.get_aliases()
         for index, aliases in existing_aliases.items():
             for alias, new_index in indexes.items():
                 if alias in aliases['aliases']:
@@ -38,4 +38,4 @@ class Command(BaseCommand):
                     "index": index
                 }
             })
-        es.update_aliases(dict(actions=alias_actions))
+        es.indices.update_aliases(body=dict(actions=alias_actions))

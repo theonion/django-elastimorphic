@@ -23,26 +23,30 @@ class DocumentType(object):
         return mapping
 
 
+class ObjectField(DocumentType, search_fields.SearchField):
+    field_type = "object"
+
+
 SIMPLE_FIELD_MAPPINGS = {
     "CharField": search_fields.StringField,
     "IntegerField": search_fields.IntegerField,
+    "FloatField": search_fields.FloatField,
     "DateTimeField": search_fields.DateField,
+    "OneToOneField": search_fields.IntegerField,
+    "ForeignKey": search_fields.IntegerField,
+    "AutoField": search_fields.IntegerField
 }
 
 
 def search_field_factory(field):
     """Returns a tuple (name, field) representing the Django model field as a SearchField
-
     """
 
     internal_type = field.get_internal_type()
-
-    if internal_type in ("OneToOneField", "ForeignKey", "AutoField"):
-        return (field.get_attname(), search_fields.IntegerField())
-
     klass = SIMPLE_FIELD_MAPPINGS.get(internal_type)
+    
     if klass:
-        return (field.name, klass())
+        return (field.get_attname(), klass())
     return None
 
 
