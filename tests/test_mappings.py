@@ -8,7 +8,7 @@ from elastimorphic.tests.testapp.models import GrandchildIndexable, ChildIndexab
 
 class MappingTestCase(TestCase):
 
-    maxDiff = 4000
+    maxDiff = 8000
 
     def test_manual_mapping(self):
         reference_mapping = {
@@ -25,7 +25,14 @@ class MappingTestCase(TestCase):
                     "bar": {"type": "integer", "store": "yes"},
                     "baz": {"type": "date"},
 
-                    "related_id": {"type": "integer"},
+                    "related": {
+                        "type": "object",
+                        "properties": {
+                            "qux": {
+                                "type": "string"
+                            }
+                        }
+                    },
                 }
             }
         }

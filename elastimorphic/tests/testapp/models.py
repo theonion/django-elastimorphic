@@ -1,8 +1,8 @@
 from django.db import models
 from polymorphic import PolymorphicModel
 
-from elastimorphic import PolymorphicIndexable, SearchManager
-from elastimorphic.mappings import DocumentType, fields
+from elastimorphic import Indexable, PolymorphicIndexable, SearchManager
+from elastimorphic import mappings
 
 
 class SeparateIndexable(PolymorphicIndexable, PolymorphicModel):
@@ -21,15 +21,22 @@ class ChildIndexable(ParentIndexable):
     bar = models.IntegerField()
 
 
-class RelatedModel(models.Model):
+class RelatedModel(Indexable, models.Model):
     qux = models.CharField(max_length=255, null=True, blank=True)
+
+    class Mapping(mappings.DocumentType):
+        class Meta:
+            exclude = ("id",)
+
+        qux = mappings.StringField()
 
 
 class GrandchildIndexable(ChildIndexable):
     baz = models.DateField()
     related = models.ForeignKey(RelatedModel, null=True, blank=True)
 
-    class Mapping(DocumentType):
-        foo = fields.StringField()
-        bar = fields.IntegerField(store="yes")
-        baz = fields.DateField()
+    class Mapping(mappings.DocumentType):
+        foo = mappings.StringField()
+        bar = mappings.IntegerField(store="yes")
+        baz = mappings.DateField()
+        related = RelatedModel.Mapping()
