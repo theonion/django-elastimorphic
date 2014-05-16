@@ -96,15 +96,16 @@ class ManagementTestCase(BaseIndexableTestCase):
 
     def test_synces(self):
         backup_settings = copy.copy(settings.ES_SETTINGS)
+        test_tokenizer = {
+            "type": "edgeNGram",
+            "min_gram": "3",
+            "max_gram": "4"
+        }
         settings.ES_SETTINGS.update({
             "index": {
                 "analysis": {
                     "tokenizer": {
-                        "edge_ngram_test_tokenizer": {
-                            "type": "edgeNGram",
-                            "min_gram": "3",
-                            "max_gram": "4"
-                        }
+                        "edge_ngram_test_tokenizer": test_tokenizer
                     }
                 }
             }
@@ -112,7 +113,7 @@ class ManagementTestCase(BaseIndexableTestCase):
         call_command("synces", self.index_suffix, force=True)
         es_settings = self.es.indices.get_settings(index=ParentIndexable.get_index_name())
         index_settings = es_settings[es_settings.keys()[0]]["settings"]
-        self.assertTrue("index.analysis.tokenizer.edge_ngram_test_tokenizer.type" in index_settings)
+        self.assertEqual(index_settings["index"]["analysis"]["tokenizer"]["edge_ngram_test_tokenizer"], test_tokenizer)
 
         settings.ES_SETTINGS = backup_settings
 
