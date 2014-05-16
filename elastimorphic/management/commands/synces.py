@@ -1,6 +1,8 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
+
+import elasticsearch
 from elasticutils import get_es
 
 from elastimorphic.conf import settings
@@ -56,24 +58,22 @@ class Command(BaseCommand):
         for index, mappings in indexes.items():
             if options.get("drop_existing_indexes", False) and index_suffix:
                 es.indices.delete(index=index, ignore=[404])
-
-            es.indices.create(index=index, body={"settings": settings.ES_SETTINGS}, ignore=400)
-                # try:
-                #     # TODO: Actually compare the settings.
-                #     es.update_settings(index, settings.ES_SETTINGS)
-                # except ElasticHttpError as e:
-                #     if e.status_code == 400:
-                #         if options.get("force", False):
-                #             es.close_index(index)
-                #             es.update_settings(index, settings.ES_SETTINGS)
-                #             es.open_index(index)
-                #         else:
-                #             self.stderr.write("Index '%s' already exists, and you're trying to update non-dynamic settings. You will need to use a new suffix, or use the --force option" % index)
-                #     else:
-                #         self.stderr.write("ElasticSearch Error: %s" % e)
+            try:
+                es.indices.create(index=index, body=dict(settings=settings.ES_SETTINGS))
+            except elasticsearch.RequestError:
+                try:
+                    # TODO: Actually compare the settings.
+                    es.indices.put_settings(index=index, body=dict(settings=settings.ES_SETTINGS))
+                except elasticsearch.RequestError:
+                    if options.get("force", False):
+                        es.indices.close(index=index)
+                        es.indices.put_settings(index=index, body=dict(settings=settings.ES_SETTINGS))
+                        es.indices.open(index=index)
+                    else:
+                        self.stderr.write("Index '%s' already exists, and you're trying to update non-dynamic settings. You will need to use a new suffix, or use the --force option" % index)
 
             for doc_type, mapping in mappings.items():
                 try:
                     es.indices.put_mapping(index=index, doc_type=doc_type, body=dict(doctype=mapping))
-                except ElasticHttpError as e:
-                    self.stderr.write("ES Error: %s" % e.error)
+                except elasticsearch.RequestError as e:
+                    self.stderr.write("ES Error: %s" % e)
