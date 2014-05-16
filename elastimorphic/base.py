@@ -106,7 +106,7 @@ class SearchManager(models.Manager):
 
     @property
     def es(self):
-        """Returns a pyelasticsearch object, using the ES URL from the Django settings"""
+        """Returns an elasticsearch object, using the ES URL from the Django settings"""
         return get_es(urls=settings.ES_URLS)
 
     def refresh(self):
@@ -163,9 +163,6 @@ class Indexable(object):
     def index(self, refresh=False):
         es = self.get_es()
         doc = self.extract_document()
-        # NOTE: this could be made more efficient with the `doc_as_upsert`
-        # param when the following pull request is merged into pyelasticsearch:
-        # https://github.com/rhec/pyelasticsearch/pull/132
         es.update(
             index=self.get_index_name(),
             doc_type=self.get_mapping_type_name(),

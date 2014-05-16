@@ -152,7 +152,12 @@ class ManagementTestCase(BaseIndexableTestCase):
         es = get_es(urls=settings.ES_URLS)
         doc = obj.extract_document()
         doc["foo"] = "DATA LOVERS"
-        es.update(obj.get_index_name(), obj.get_mapping_type_name(), obj.id, doc=doc, upsert=doc, refresh=True)
+        es.update(
+            index=obj.get_index_name(),
+            doc_type=obj.get_mapping_type_name(),
+            id=obj.id,
+            body=dict(doc=doc, doc_as_upsert=True),
+            refresh=True)
 
         # Make sure the bad data works
         self.assertEqual(ParentIndexable.search_objects.query(foo__match="DATA LOVERS").count(), 1)

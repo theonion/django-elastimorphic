@@ -1,7 +1,6 @@
 from django.core.management import call_command
 from django.test import TestCase
 from elasticutils import get_es
-from pyelasticsearch.exceptions import ElasticHttpNotFoundError
 
 from elastimorphic.conf import settings
 from elastimorphic.models import polymorphic_indexable_registry
