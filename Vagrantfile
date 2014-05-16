@@ -8,7 +8,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "precise32"
   
   config.vm.network :private_network, ip: "192.168.33.101"
-  config.vm.network "forwarded_port", guest: 9200, host: 9200
+  config.vm.network "forwarded_port", guest: 9200, host: 9220
 
   config.vm.provider :virtualbox do |v, override|
     override.vm.box_url = "http://files.vagrantup.com/precise32.box"

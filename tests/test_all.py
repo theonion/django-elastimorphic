@@ -209,7 +209,7 @@ class TestDynamicMappings(BaseIndexableTestCase):
 
     def test_bad_index(self):
         """Check to make sure that the mappings are strict"""
-        mapping = self.es.get_mapping(ParentIndexable.get_index_name(), ParentIndexable.get_mapping_type_name())
+        mapping = self.es.indices.get_mapping(index=ParentIndexable.get_index_name(), doc_type=ParentIndexable.get_mapping_type_name())
         self.assertDictEqual(mapping, ParentIndexable.get_mapping())
 
         obj = ParentIndexable.objects.create(foo="Fighters")
