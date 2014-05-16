@@ -6,8 +6,9 @@ import datetime
 from django.core.management import call_command
 from django.test import TestCase
 
+import elasticsearch
+
 from elasticutils import get_es
-from pyelasticsearch.exceptions import ElasticHttpError
 
 from elastimorphic.conf import settings
 from elastimorphic.models import polymorphic_indexable_registry
@@ -222,7 +223,7 @@ class TestDynamicMappings(BaseIndexableTestCase):
         doc = obj.extract_document()
         doc["extra"] = "Just an additional string"
 
-        with self.assertRaises(ElasticHttpError):
+        with self.assertRaises(elasticsearch.RequestError):
             self.es.update(
                 obj.get_index_name(),
                 obj.get_mapping_type_name(),
@@ -230,7 +231,7 @@ class TestDynamicMappings(BaseIndexableTestCase):
                 body=dict(doc=doc, doc_as_upsert=True)
             )
 
-        mapping = self.es.get_mapping(ParentIndexable.get_index_name(), ParentIndexable.get_mapping_type_name())
+        mapping = self.es.indices.get_mapping(index=ParentIndexable.get_index_name(), doc_type=ParentIndexable.get_mapping_type_name())
         self.assertDictEqual(mapping, ParentIndexable.get_mapping())
 
 
