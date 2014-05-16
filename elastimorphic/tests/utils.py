@@ -20,7 +20,4 @@ class BaseIndexableTestCase(TestCase):
 
     def delete_indexes_with_suffix(self, suffix):
         for base_class in polymorphic_indexable_registry.families.keys():
-            try:
-                self.es.delete_index(base_class.get_index_name() + "_" + suffix)
-            except ElasticHttpNotFoundError:
-                pass
+            self.es.indices.delete(index=base_class.get_index_name() + "_" + suffix, ignore=404)

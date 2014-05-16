@@ -111,7 +111,7 @@ class SearchManager(models.Manager):
 
     def refresh(self):
         """Refreshes the index for this object"""
-        return self.es.refresh(index=self.model.get_index_name())
+        return self.es.indices.refresh(index=self.model.get_index_name())
 
     def query(self, **kwargs):
         """Just a simple bridge to elasticutils' S().query(), prepopulating the URL
@@ -167,11 +167,10 @@ class Indexable(object):
         # param when the following pull request is merged into pyelasticsearch:
         # https://github.com/rhec/pyelasticsearch/pull/132
         es.update(
-            self.get_index_name(),
-            self.get_mapping_type_name(),
-            self.pk,
-            doc=doc,
-            upsert=doc
+            index=self.get_index_name(),
+            doc_type=self.get_mapping_type_name(),
+            id=self.pk,
+            body=dict(doc=doc, doc_as_upsert=True)
         )
 
     def save(self, index=True, refresh=False, *args, **kwargs):

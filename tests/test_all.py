@@ -109,7 +109,7 @@ class ManagementTestCase(BaseIndexableTestCase):
             }
         })
         call_command("synces", self.index_suffix, force=True)
-        es_settings = self.es.get_settings(ParentIndexable.get_index_name())
+        es_settings = self.es.indices.get_settings(index=ParentIndexable.get_index_name())
         index_settings = es_settings[es_settings.keys()[0]]["settings"]
         self.assertTrue("index.analysis.tokenizer.edge_ngram_test_tokenizer.type" in index_settings)
 
@@ -222,8 +222,7 @@ class TestDynamicMappings(BaseIndexableTestCase):
                 obj.get_index_name(),
                 obj.get_mapping_type_name(),
                 obj.id,
-                doc=doc,
-                upsert=doc
+                body=dict(doc=doc, doc_as_upsert=True)
             )
 
         mapping = self.es.get_mapping(ParentIndexable.get_index_name(), ParentIndexable.get_mapping_type_name())
