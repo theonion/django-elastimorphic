@@ -214,9 +214,13 @@ class ManagementTestCase(BaseIndexableTestCase):
 
 class TestDynamicMappings(BaseIndexableTestCase):
 
+    maxDiff = 2000
+
     def test_bad_index(self):
         """Check to make sure that the mappings are strict"""
-        mapping = self.es.indices.get_mapping(index=ParentIndexable.get_index_name(), doc_type=ParentIndexable.get_mapping_type_name())
+        index_mapping = self.es.indices.get_mapping(index=ParentIndexable.get_index_name(), doc_type=ParentIndexable.get_mapping_type_name())
+        alias_name = index_mapping.keys()[0]
+        mapping = index_mapping[alias_name]["mappings"]
         self.assertDictEqual(mapping, ParentIndexable.get_mapping())
 
         obj = ParentIndexable.objects.create(foo="Fighters")
@@ -232,7 +236,9 @@ class TestDynamicMappings(BaseIndexableTestCase):
                 body=dict(doc=doc, doc_as_upsert=True)
             )
 
-        mapping = self.es.indices.get_mapping(index=ParentIndexable.get_index_name(), doc_type=ParentIndexable.get_mapping_type_name())
+        index_mapping = self.es.indices.get_mapping(index=ParentIndexable.get_index_name(), doc_type=ParentIndexable.get_mapping_type_name())
+        alias_name = index_mapping.keys()[0]
+        mapping = index_mapping[alias_name]["mappings"]
         self.assertDictEqual(mapping, ParentIndexable.get_mapping())
 
 

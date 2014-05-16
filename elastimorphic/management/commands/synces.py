@@ -74,6 +74,6 @@ class Command(BaseCommand):
 
             for doc_type, mapping in mappings.items():
                 try:
-                    es.indices.put_mapping(index=index, doc_type=doc_type, body=dict(doctype=mapping))
+                    es.indices.put_mapping(index=index, doc_type=doc_type, body=mapping)
                 except elasticsearch.RequestError as e:
                     self.stderr.write("ES Error: %s" % e)
