@@ -1,9 +1,7 @@
 from django.db import models
 from polymorphic import PolymorphicModel
 
-from elastimorphic import Indexable, PolymorphicIndexable, SearchManager
-from elastimorphic.mappings import fields
-from elastimorphic.mappings import doctype
+from elastimorphic import PolymorphicIndexable, SearchManager
 
 
 class SeparateIndexable(PolymorphicIndexable, PolymorphicModel):
@@ -11,33 +9,88 @@ class SeparateIndexable(PolymorphicIndexable, PolymorphicModel):
 
     search_objects = SearchManager()
 
+    def extract_document(self):
+        doc = super(SeparateIndexable, self).extract_document()
+        doc["junk"] = self.junk
+        return doc
+
+    @classmethod
+    def get_mapping_properties(cls):
+        properties = super(SeparateIndexable, cls).get_mapping_properties()
+        properties.update({
+            "junk": {"type": "string"}
+        })
+        return properties
+
+    @classmethod
+    def get_serializer_class(cls):
+        from .serializers import SeparateIndexableSerializer
+        return SeparateIndexableSerializer
+
 
 class ParentIndexable(PolymorphicIndexable, PolymorphicModel):
     foo = models.CharField(max_length=255)
 
     search_objects = SearchManager()
 
+    def extract_document(self):
+        doc = super(ParentIndexable, self).extract_document()
+        doc['foo'] = self.foo
+        return doc
+
+    @classmethod
+    def get_mapping_properties(cls):
+        properties = super(ParentIndexable, cls).get_mapping_properties()
+        properties.update({
+            "foo": {"type": "string"}
+        })
+        return properties
+
+    @classmethod
+    def get_serializer_class(cls):
+        from .serializers import ParentIndexableSerializer
+        return ParentIndexableSerializer
+
 
 class ChildIndexable(ParentIndexable):
     bar = models.IntegerField()
 
+    def extract_document(self):
+        doc = super(ChildIndexable, self).extract_document()
+        doc["bar"] = self.bar
+        return doc
 
-class RelatedModel(Indexable, models.Model):
-    qux = models.CharField(max_length=255, null=True, blank=True)
+    @classmethod
+    def get_mapping_properties(cls):
+        properties = super(ChildIndexable, cls).get_mapping_properties()
+        properties.update({
+            "bar": {"type": "integer"}
+        })
+        return properties
 
-    class Mapping(doctype.DocumentType):
-        class Meta:
-            exclude = ("id",)
-
-        qux = fields.StringField()
+    @classmethod
+    def get_serializer_class(cls):
+        from .serializers import ChildIndexableSerializer
+        return ChildIndexableSerializer
 
 
 class GrandchildIndexable(ChildIndexable):
     baz = models.DateField()
-    related = models.ForeignKey(RelatedModel, null=True, blank=True)
 
-    class Mapping(doctype.DocumentType):
-        foo = fields.StringField()
-        bar = fields.IntegerField(store="yes")
-        baz = fields.DateField()
-        related = RelatedModel.Mapping()
+    def extract_document(self):
+        doc = super(GrandchildIndexable, self).extract_document()
+        doc["baz"] = self.baz
+        return doc
+
+    @classmethod
+    def get_mapping_properties(cls):
+        properties = super(GrandchildIndexable, cls).get_mapping_properties()
+        properties.update({
+            "baz": {"type": "date"}
+        })
+        return properties
+
+    @classmethod
+    def get_serializer_class(cls):
+        from .serializers import GrandchildIndexableSerializer
+        return GrandchildIndexableSerializer
