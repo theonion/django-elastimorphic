@@ -5,7 +5,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand
 from django.db import models
 from elasticutils import get_es
-from pyelasticsearch.client import JsonEncoder
+# from pyelasticsearch.client import JsonEncoder
 
 from elastimorphic import PolymorphicIndexable
 from elastimorphic.conf import settings
@@ -29,7 +29,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.es = get_es(urls=settings.ES_URLS)
-        bulk_endpoint = "%s/_bulk" % settings.ES_URLS[0]
 
         chunk_size = options.get("chunk")
         index_suffix = options.get("index_suffix")
@@ -73,31 +72,22 @@ class Command(BaseCommand):
                         "_id": instance.pk
                     }
                 }
-                payload.append(json.dumps(meta, cls=JsonEncoder, use_decimal=True))
+                payload.append(meta)
                 doc = instance.extract_document()
-                payload.append(json.dumps(doc, cls=JsonEncoder, use_decimal=True))
+                payload.append(doc)
                 if len(payload) / 2 == chunk_size:
-                    r = requests.post(bulk_endpoint, data="\n".join(payload) + "\n")
-                    if r.status_code != 200:
-                        print(payload)
-                        print(r.json())
-                    else:
-                        # make sure it indexed everything:
-                        result = r.json()
-                        good_items = [item for item in result["items"] if item["index"].get("ok", False)]
-                        if len(good_items) != len(payload) // 2:
-                            self.stdout.write("Bulk indexing error! Item count mismatch.")
-                            bad_items = [item for item in result["items"] if not item["index"].get("ok", False)]
-                            self.stdout.write("These were rejected: %s" % str(bad_items))
-                            return "Bulk indexing failed."
+                    response = self.es.bulk(body=payload)
+                    good_items = [item for item in response["items"] if item["index"].get("ok", False)]
+                    if len(good_items) != len(payload) // 2:
+                        self.stdout.write("Bulk indexing error! Item count mismatch.")
+                        bad_items = [item for item in response["items"] if not item["index"].get("ok", False)]
+                        self.stdout.write("These were rejected: %s" % str(bad_items))
+                        return "Bulk indexing failed."
                     num_processed += (len(payload) / 2)
                     self.stdout.write("Indexed %d items" % num_processed)
                     payload = []
 
         if payload:
-            r = requests.post(bulk_endpoint, data="\n".join(payload) + "\n")
-            if r.status_code != 200:
-                print(payload)
-                print(r.json())
+            response = self.es.bulk(body=payload)
             num_processed += (len(payload) / 2)
             self.stdout.write("Indexed %d items" % num_processed)

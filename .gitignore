@@ -1,7 +1,12 @@
 *.py[cod]
 .DS_Store
+
 share
+bin
+lib
+include
 .Python
+
 *.db
 .coverage
 coverage.xml

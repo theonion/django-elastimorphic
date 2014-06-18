@@ -17,14 +17,9 @@ author = "Onion Tech Team"
 author_email = "tech@theonion.com"
 license = "MIT"
 requires = [
-    "Django",
+    "Django>=1.5",
     "django_polymorphic==0.5.3",
-    "elasticutils==0.8.2",
-    "pyelasticsearch==0.6.1",
-    "requests==2.2.1",
-    "simplejson==3.3.3",
-    "six==1.5.2",
-    "wsgiref==0.1.2",
+    "elasticutils==0.9.1",
 ]
 
 
@@ -73,7 +68,7 @@ if sys.argv[-1] == "publish":
 class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = ["elastimorphic"]
+        self.test_args = ["tests/"]
         self.test_suite = True
 
     def run_tests(self):
