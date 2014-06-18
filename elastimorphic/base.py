@@ -5,7 +5,7 @@ from elasticutils import get_es, MappingType, S, SearchResults
 
 from .conf import settings
 from .models import polymorphic_indexable_registry
-from .mappings import doctype_class_factory
+from .mappings.doctype import DocumentType, search_field_factory
 
 
 class ModelSearchResults(SearchResults):
@@ -137,8 +137,29 @@ class Indexable(object):
         return "%s_%s" % (cls._meta.app_label, cls._meta.module_name)
 
     @classmethod
+    def get_doctype_class(cls):
+        doctype_class = type("{}_Mapping".format(cls.__name__), (DocumentType,), {})
+        if hasattr(cls, "Mapping"):
+            doctype_class = cls.Mapping
+
+        exclude = getattr(doctype_class, "exclude", [])
+
+        for field_pair in doctype_class.fields:
+            exclude.append(field_pair[0])
+
+        for field in cls._meta.fields:
+            if field.name in exclude:
+                continue
+
+            field_tuple = search_field_factory(field)
+            if field_tuple:
+                doctype_class.fields.append(field_tuple)
+
+        return doctype_class
+
+    @classmethod
     def get_mapping(cls):
-        doctype_class = doctype_class_factory(cls)
+        doctype_class = cls.get_doctype_class()
 
         mapping = doctype_class().get_mapping()
         mapping["dynamic"] = "strict"
@@ -151,7 +172,7 @@ class Indexable(object):
         return "%s_%s" % (index_prefix, cls._meta.db_table)
 
     def extract_document(self):
-        doctype_class = doctype_class_factory(self.__class__)
+        doctype_class = self.get_doctype_class()
 
         doctype = doctype_class()
         document = {}
