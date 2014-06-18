@@ -13,7 +13,7 @@ from elasticutils import get_es
 from elastimorphic.conf import settings
 from elastimorphic.models import polymorphic_indexable_registry
 
-from elastimorphic.tests.utils import BaseIndexableTestCase
+from elastimorphic.tests.base import BaseIndexableTestCase
 from elastimorphic.tests.testapp.models import (
     ChildIndexable,
     GrandchildIndexable,
