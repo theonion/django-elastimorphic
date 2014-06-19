@@ -80,7 +80,7 @@ class Command(BaseCommand):
                     good_items = [item for item in response["items"] if item["index"].get("ok", False)]
                     if len(good_items) != len(payload) // 2:
                         self.stdout.write("Bulk indexing error! Item count mismatch.")
-                        bad_items = [item for item in response["items"] if not item["index"].get("ok", False)]
+                        bad_items = [item for item in response["items"] if item["index"].get["status"] < 201]
                         self.stdout.write("These were rejected: %s" % str(bad_items))
                         return "Bulk indexing failed."
                     num_processed += (len(payload) / 2)
