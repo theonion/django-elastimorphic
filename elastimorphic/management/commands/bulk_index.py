@@ -77,10 +77,10 @@ class Command(BaseCommand):
                 payload.append(doc)
                 if len(payload) / 2 == chunk_size:
                     response = self.es.bulk(body=payload)
-                    good_items = [item for item in response["items"] if item["index"].get("ok", False)]
+                    good_items = [item for item in response["items"] if item["index"]["status"] <= 299]
                     if len(good_items) != len(payload) // 2:
                         self.stdout.write("Bulk indexing error! Item count mismatch.")
-                        bad_items = [item for item in response["items"] if item["index"].get["status"] < 201]
+                        bad_items = [item for item in response["items"] if item["index"]["status"] > 201]
                         self.stdout.write("These were rejected: %s" % str(bad_items))
                         return "Bulk indexing failed."
                     num_processed += (len(payload) / 2)
