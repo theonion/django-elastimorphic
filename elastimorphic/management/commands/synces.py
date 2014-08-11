@@ -37,7 +37,7 @@ class Command(BaseCommand):
             # No suffix supplied. Let's create a map of existing aliases -> indexes
             # and try to update those instead of creating new indexes.
             index_suffix = ""
-            aliases = es.get_aliases()
+            aliases = es.indices.get_aliases()
             for index_name in aliases:
                 index_aliases = aliases[index_name]["aliases"]
                 if index_aliases:
