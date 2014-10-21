@@ -12,7 +12,9 @@ Usage
 * Include "elastimorphic" in your INSTALLED_APPS
 * Create models which subclass PolymorphicIndexable and PolymorphicModel
 * Implement the PolymorphicIndexable interfaces on your models
-* `manage.py synces` creates indexes for your models in elasticsearch
+* `manage.py synces <alias_name>` creates indexes for your models in elasticsearch with alias <dbname>_<app_name>_<model_name>_<alias_name>
+* `manage.py es_swap_aliases <alias_name>` activates the indexes in ES
+* `manage.py bulk_index` populates the index with data in the PolymorphicIndexable models
 
 Running tests
 -------------
