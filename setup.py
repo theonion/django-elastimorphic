@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import codecs
 import os
 import re
 import sys
@@ -16,11 +17,7 @@ url = "https://github.com/theonion/django-elastimorphic"
 author = "Onion Tech Team"
 author_email = "tech@theonion.com"
 license = "MIT"
-requires = [
-    "Django>=1.5",
-    "django_polymorphic==0.5.3",
-    "elasticutils==0.9.1",
-]
+requires = [line for line in codecs.open("requirements.txt", "r") if len(line)]
 
 
 def get_version(package):
