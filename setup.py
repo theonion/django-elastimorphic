@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import codecs
 import os
 import re
 import sys
@@ -16,11 +17,7 @@ url = "https://github.com/theonion/django-elastimorphic"
 author = "Onion Tech Team"
 author_email = "tech@theonion.com"
 license = "MIT"
-requires = [
-    "Django>=1.5",
-    "django_polymorphic==0.5.3",
-    "elasticutils==0.9.1",
-]
+requires = [line for line in codecs.open("requirements.txt", "r") if len(line)]
 
 
 def get_version(package):
@@ -89,6 +86,6 @@ setup(
     packages=get_packages("elastimorphic"),
     package_data=get_package_data(package),
     install_requires=requires,
-    tests_require=["pytest-django", "djangorestframework==2.3.13"],
+    tests_require=["pytest-django", "djangorestframework==2.3.13", "requests"],
     cmdclass={"test": PyTest}
 )

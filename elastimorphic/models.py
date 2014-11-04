@@ -1,3 +1,4 @@
+import django
 from django.db.models.signals import class_prepared
 
 
@@ -23,14 +24,15 @@ class PolymorphicIndexableRegistry(object):
 
 polymorphic_indexable_registry = PolymorphicIndexableRegistry()
 
+if django.VERSION < (1, 7):
+    def register_polymorphicindexables(sender=None, **kwargs):
+        from .base import PolymorphicIndexable
 
-def register_polymorphicindexables(sender, **kwargs):
-    from .base import PolymorphicIndexable
+        if not issubclass(sender, PolymorphicIndexable):
+            return
 
-    if not issubclass(sender, PolymorphicIndexable):
-        return
-    polymorphic_indexable_registry.register(sender)
+        polymorphic_indexable_registry.register(sender)
 
 
-class_prepared.connect(
-    register_polymorphicindexables, dispatch_uid="polymorphicindexable_class_prepared")
+    class_prepared.connect(
+        register_polymorphicindexables, dispatch_uid="polymorphicindexable_class_prepared")
