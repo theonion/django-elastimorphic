@@ -18,7 +18,7 @@ author_email = "tech@theonion.com"
 license = "MIT"
 requires = [
     "django>=1.5",
-    "django-polymorphic==0.6",
+    "django_polymorphic==0.6",
     "elasticutils==0.9.1",
 ]
 
