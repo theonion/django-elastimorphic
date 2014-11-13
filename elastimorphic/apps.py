@@ -10,6 +10,9 @@ class ElastimorphicConfig(AppConfig):
     def ready(self):
         def register_subclasses(klass):
             for subclass in klass.__subclasses__():
-                polymorphic_indexable_registry.register(subclass)
+                # only register concrete models
+                meta = getattr(subclass, "_meta")
+                if meta and not getattr(meta, "abstract"):
+                    polymorphic_indexable_registry.register(subclass)
                 register_subclasses(subclass)
         register_subclasses(PolymorphicIndexable)

@@ -18,7 +18,8 @@ from elastimorphic.tests.testapp.models import (
     ChildIndexable,
     GrandchildIndexable,
     ParentIndexable,
-    SeparateIndexable)
+    SeparateIndexable,
+    MixedIndexable)
 
 
 class IndexableTestCase(BaseIndexableTestCase):
@@ -50,6 +51,7 @@ class IndexableTestCase(BaseIndexableTestCase):
         self.assertEqual(
             SeparateIndexable.get_mapping_type_names(), [
                 SeparateIndexable.get_mapping_type_name(),
+                MixedIndexable.get_mapping_type_name(),
             ]
         )
 
@@ -247,7 +249,17 @@ class TestPolymorphicIndexableRegistry(TestCase):
         self.assertTrue(polymorphic_indexable_registry.all_models)
         self.assertTrue(polymorphic_indexable_registry.families)
         types = polymorphic_indexable_registry.get_doctypes(ParentIndexable)
-        desired_classes = set([ParentIndexable, ChildIndexable, GrandchildIndexable])
+        desired_classes = set([
+            ParentIndexable, ChildIndexable, GrandchildIndexable
+        ])
+        result_classes = set()
+        for name, klass in types.items():
+            result_classes.add(klass)
+        self.assertEqual(desired_classes, result_classes)
+
+    def test_registry_has_no_abstract_models(self):
+        types = polymorphic_indexable_registry.get_doctypes(SeparateIndexable)
+        desired_classes = set([SeparateIndexable, MixedIndexable])
         result_classes = set()
         for name, klass in types.items():
             result_classes.add(klass)

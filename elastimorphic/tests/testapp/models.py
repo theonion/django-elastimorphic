@@ -94,3 +94,15 @@ class GrandchildIndexable(ChildIndexable):
     def get_serializer_class(cls):
         from .serializers import GrandchildIndexableSerializer
         return GrandchildIndexableSerializer
+
+
+class PolyMixin(PolymorphicIndexable, models.Model):
+    itsa = models.TextField(default="", blank=True)
+    mixin = models.TextField(default="", blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class MixedIndexable(SeparateIndexable, PolyMixin):
+    pass
