@@ -133,8 +133,8 @@ class Indexable(object):
 
     @classmethod
     def get_mapping_type_name(cls):
-        """By default, we'll be using the app_label and module_name properties to get the ES doctype for this object"""
-        return "%s_%s" % (cls._meta.app_label, cls._meta.module_name)
+        """By default, we'll be using the app_label and model_name properties to get the ES doctype for this object"""
+        return "%s_%s" % (cls._meta.app_label, cls._meta.model_name)
 
     @classmethod
     def get_doctype_class(cls):
