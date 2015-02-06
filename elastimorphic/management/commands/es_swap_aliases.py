@@ -23,13 +23,14 @@ class Command(BaseCommand):
         existing_aliases = es.indices.get_aliases()
         for index, aliases in existing_aliases.items():
             for alias, new_index in indexes.items():
-                if alias in aliases['aliases']:
-                    alias_actions.append({
-                        "remove": {
-                            "alias": alias,
-                            "index": index
-                        }
-                    })
+                if "aliases" in aliases:
+                    if alias in aliases["aliases"]:
+                        alias_actions.append({
+                            "remove": {
+                                "alias": alias,
+                                "index": index
+                            }
+                        })
         # add our new aliases
         for alias, index in indexes.items():
             alias_actions.append({

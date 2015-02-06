@@ -39,7 +39,7 @@ class Command(BaseCommand):
             index_suffix = ""
             aliases = es.indices.get_aliases()
             for index_name in aliases:
-                index_aliases = aliases[index_name]["aliases"]
+                index_aliases = aliases[index_name].get("aliases")
                 if index_aliases:
                     index_alias_map[index_aliases.keys()[0]] = index_name
 
