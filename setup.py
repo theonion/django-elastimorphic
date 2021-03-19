@@ -89,6 +89,6 @@ setup(
     packages=get_packages("elastimorphic"),
     package_data=get_package_data(package),
     install_requires=requires,
-    tests_require=["pytest-django", "djangorestframework==2.3.13", "requests"],
+    tests_require=["pytest-django", "djangorestframework==3.11.2", "requests"],
     cmdclass={"test": PyTest}
 )
